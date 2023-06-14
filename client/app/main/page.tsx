@@ -265,6 +265,7 @@ const page: FC<pageProps> = ({ }) => {
     <>
 
       <div className='flex flex-col items-start bg-blue-600 w-1/5 h-2/5 self-center ml-4'>
+        <a className='text-black text-lg font-extrabold'>{roomId}</a>
         {room?.users.map((user) => (
           <div key={user}>
             <span className='text-black text-lg font-extrabold'>{user}</span>
