@@ -139,7 +139,7 @@ io.on('connection', (socket) => {
 
 
 app.get('/create-room', (req, res) => {
-  const room = uuidv4();
+  const room = uuidv4().slice(0, 5);
 
   const newRoom = {
     room,
