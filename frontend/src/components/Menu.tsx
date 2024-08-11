@@ -4,17 +4,26 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
-
+import { useGameContext } from '../Context';
 const socket = io('http://localhost:3001');
 
 const Menu = () => {
   const navigate = useNavigate();
-  const [name, setName] = useState('');
-  const [roomid, setRoomid] = useState('');
-  const [error, setError] = useState('');
-  const [joined, setJoined] = useState(false);
-  const [users, setUsers] = useState([]);
-  const [ready, setReady] = useState(false);
+  const {
+    roomId, setRoomId,
+    userName, setUserName,
+    users, setUsers,
+    ready, setReady,
+    gameStarted, setGameStarted,
+    setCurrentDrawer,
+    setCurrentWord,
+    setScores,
+    setRoundTimeRemaining,
+    setGameTimeRemaining
+  } = useGameContext();
+
+  const [error, setError] = React.useState('');
+  const [joined, setJoined] = React.useState(false);
 
   useEffect(() => {
     socket.on('room-joined', (data) => {
@@ -28,6 +37,7 @@ const Menu = () => {
     });
 
     socket.on('game-start', () => {
+      setGameStarted(true);
       navigate('/game');
     });
 
@@ -39,23 +49,22 @@ const Menu = () => {
       socket.off('game-start');
       socket.off('room-error');
     };
-  }, [navigate]);
+  }, [navigate, setUsers, setGameStarted]);
 
   const joinRoom = (roomId) => {
-    if (!name.trim()) {
+    if (!userName.trim()) {
       setError('Please enter a name');
       return;
     }
 
-    sessionStorage.setItem('roomid', roomId);
-    sessionStorage.setItem('name', name);
-    socket.emit('join-room', { roomId, userName: name });
+    setRoomId(roomId);
+    socket.emit('join-room', { roomId, userName });
   };
 
   const CreateRoom = async (event) => {
     event.preventDefault();
   
-    if (!name.trim()) {
+    if (!userName.trim()) {
       setError('Please enter a name');
       return;
     }
@@ -64,9 +73,9 @@ const Menu = () => {
       const res = await axios.get('http://localhost:3001/create-room');
   
       if (res.status === 200) {
-        const roomId = res.data.room;
-        setRoomid(roomId);
-        joinRoom(roomId);
+        const newRoomId = res.data.room;
+        setRoomId(newRoomId);
+        joinRoom(newRoomId);
       }
     } catch (error) {
       console.error('Error creating room:', error);
@@ -77,27 +86,27 @@ const Menu = () => {
   const JoinRoom = (event) => {
     event.preventDefault();
 
-    if (!roomid.trim()) {
+    if (!roomId.trim()) {
       setError('Please enter a room ID');
       return;
     }
 
-    joinRoom(roomid);
+    joinRoom(roomId);
   };
 
   const handleReady = () => {
-    socket.emit('ready', { roomId: roomid, userName: name });
+    socket.emit('ready', { roomId, userName });
     setReady(true);
   };
 
   if (joined) {
     return (
       <div>
-        <h2>Room: {roomid}</h2>
+        <h2>Room: {roomId}</h2>
         <h3>Users in room:</h3>
         <ul>
           {users.map((user, index) => (
-            <li key={index}>{user}{user === name && ' (You)'}</li>
+            <li key={index}>{user}{user === userName && ' (You)'}</li>
           ))}
         </ul>
         <button onClick={handleReady} disabled={ready}>
@@ -113,8 +122,8 @@ const Menu = () => {
       <div>
         <input 
           placeholder='Type your name!'
-          onChange={(event) => setName(event.target.value)}
-          value={name}
+          onChange={(event) => setUserName(event.target.value)}
+          value={userName}
         />
         <button onClick={CreateRoom}>
           Create room
@@ -124,8 +133,8 @@ const Menu = () => {
       <div>
         <input 
           placeholder='Type room id'
-          onChange={(event) => setRoomid(event.target.value)}
-          value={roomid}
+          onChange={(event) => setRoomId(event.target.value)}
+          value={roomId}
         />
         <button onClick={JoinRoom}>
           Join room
