@@ -1,12 +1,12 @@
 
 //@ts-nocheck
-import express from 'express';
-import http from 'http';
-import { Server as SocketIOServer } from 'socket.io';
-import bodyParser from 'body-parser';
-import cors from 'cors';
-import { v4 as uuidv4 } from 'uuid';
-import { words } from './words.json';
+// import express from 'express';
+// import http from 'http';
+// import { Server as SocketIOServer } from 'socket.io';
+// import bodyParser from 'body-parser';
+// import cors from 'cors';
+// import { v4 as uuidv4 } from 'uuid';
+// import { words } from './words.json';
 
 class Room {
   id: string;
@@ -92,7 +92,7 @@ class Room {
 
     this.roundTimer = setInterval(() => {
       this.roundTimeRemaining--;
-      console.log(this.roundTimeRemaining);
+      // console.log(this.roundTimeRemaining);
       io.to(this.id).emit('round-time', this.roundTimeRemaining);
 
       if (this.roundTimeRemaining <= 0) {
@@ -138,45 +138,159 @@ class Room {
 }
 
 
-class RoomManager {
-  private rooms: Map<string, Room>;
+// class RoomManager {
+//   private rooms: Map<string, Room>;
 
-  constructor() {
-    this.rooms = new Map();
-  }
+//   constructor() {
+//     this.rooms = new Map();
+//   }
 
-  createRoom(): string {
-    const roomId = uuidv4().slice(0, 5);
-    const room = new Room(roomId);
-    this.rooms.set(roomId, room);
-    return roomId;
-  }
+//   createRoom(): string {
+//     const roomId = uuidv4().slice(0, 5);
+//     const room = new Room(roomId);
+//     this.rooms.set(roomId, room);
+//     return roomId;
+//   }
 
-  getRoom(roomId: string): Room | undefined {
-    return this.rooms.get(roomId);
-  }
+//   getRoom(roomId: string): Room | undefined {
+//     return this.rooms.get(roomId);
+//   }
 
-  deleteRoom(roomId: string) {
-    this.rooms.delete(roomId);
-  }
-}
+//   deleteRoom(roomId: string) {
+//     this.rooms.delete(roomId);
+//   }
+// }
 
-// Server setup
+// // Server setup
+// const app = express();
+// app.use(bodyParser.urlencoded({ extended: true }));
+// app.use(express.json());
+// app.use(cors());
+
+// const server = http.createServer(app);
+// const io = new SocketIOServer(server, {
+//   cors: { origin: '*' },
+// });
+
+// const roomManager = new RoomManager();
+
+// function getRandomWord(): string {
+//   return words[Math.floor(Math.random() * words.length)];
+// }
+
+// io.on('connection', (socket) => {
+//   socket.on('join-room', ({ roomId, userName }) => {
+//     const room = roomManager.getRoom(roomId);
+//     if (!room) {
+//       return socket.emit('room-error', 'Room not found');
+//     }
+
+//     if (room.users.includes(userName)) {
+//       return socket.emit('room-error', 'User already in room');
+//     }
+
+//     room.addUser(userName);
+//     socket.join(roomId);
+
+//     io.to(roomId).emit('room-joined', { message: `${userName} joined the room ${roomId}` });
+//     io.to(roomId).emit('room', room.toJSON());
+//   });
+
+//   socket.on('ready', ({ roomId, userName }) => {
+//     // console.log("user ready", roomId, userName);
+//     const room = roomManager.getRoom(roomId);
+    
+//     if (!room) {
+//       return socket.emit('room-error', 'Room not found');
+//     }
+
+//     room.setUserReady(userName);
+//     // console.log(room)
+//     io.to(roomId).emit('user-ready', { userName });
+
+//     if (room.allUsersReady() && !room.gameInProgress) {
+//       room.startGame(io);
+//       io.to(roomId).emit('game-start');
+//       // console.log("game started", room.gameInProgress);
+//     }
+
+    
+//   });
+
+//   socket.on('guess', ({ roomId, userName, guess }) => {
+//     const room = roomManager.getRoom(roomId);
+//     if (room && room.gameInProgress && guess === room.currentWord) {
+//       room.updateScore(userName, 10); // Award points for correct guess
+//       io.to(roomId).emit('correct-guess', { userName, word: room.currentWord });
+//       room.endRound(io);
+//     }
+//   });
+
+//   socket.on('draw-line', ({ prevPoint, currentPoint, color, roomId }) => {
+//     const room = roomManager.getRoom(roomId);
+//     console.log("draw line", prevPoint, currentPoint, color, roomId);
+//     if (room) {
+      
+//       // Broadcast the drawing data to all other users in the room
+//       socket.to(roomId).emit('draw-line', { prevPoint, currentPoint, color });
+//     }
+//   });
+
+//   // ... (other socket event handlers)
+// });
+
+// app.get('/create-room', (req, res) => {
+//   const roomId = roomManager.createRoom();
+//   res.json({ message: 'Room created successfully', room: roomId });
+// });
+
+// app.post('/join-room/:roomId', (req, res) => {
+//   const roomId = req.params.roomId;
+//   const userName = req.body.name;
+
+//   const room = roomManager.getRoom(roomId);
+//   if (!room) {
+//     return res.status(404).json({ error: 'Room not found' });
+//   }
+
+//   room.addUser(userName);
+//   res.status(200).json({ message: `${userName} joined the room ${roomId}` });
+// });
+
+// app.get('/room/:roomId', (req, res) => {
+//   const roomId = req.params.roomId;
+//   const room = roomManager.getRoom(roomId);
+
+//   if (!room) {
+//     return res.status(404).json({ error: 'Room not found' });
+//   }
+
+//   res.json({ roomData: room.toJSON() });
+// });
+
+// server.listen(3001, () => {
+//   console.log('✔️ Server listening on port 3001');
+// });
+
+import express from 'express';
+import http from 'http';
+import socketIo from 'socket.io';
+import cors from 'cors';
+import RoomManager from './RoomManager';
+
 const app = express();
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.json());
-app.use(cors());
-
 const server = http.createServer(app);
-const io = new SocketIOServer(server, {
-  cors: { origin: '*' },
+const io = socketIo(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
 });
 
-const roomManager = new RoomManager();
+app.use(cors());
+app.use(express.json());
 
-function getRandomWord(): string {
-  return words[Math.floor(Math.random() * words.length)];
-}
+const roomManager = new RoomManager();
 
 io.on('connection', (socket) => {
   socket.on('join-room', ({ roomId, userName }) => {
@@ -189,15 +303,19 @@ io.on('connection', (socket) => {
       return socket.emit('room-error', 'User already in room');
     }
 
+    const isHost = room.users.length === 0; // First user to join is the host
     room.addUser(userName);
     socket.join(roomId);
 
-    io.to(roomId).emit('room-joined', { message: `${userName} joined the room ${roomId}` });
+    io.to(roomId).emit('room-joined', { 
+      message: `${userName} joined the room ${roomId}`,
+      isHost,
+      status: room.status // Assuming you add a 'status' property to your room model
+    });
     io.to(roomId).emit('room', room.toJSON());
   });
 
   socket.on('ready', ({ roomId, userName }) => {
-    console.log("user ready", roomId, userName);
     const room = roomManager.getRoom(roomId);
     
     if (!room) {
@@ -205,16 +323,22 @@ io.on('connection', (socket) => {
     }
 
     room.setUserReady(userName);
-    console.log(room)
     io.to(roomId).emit('user-ready', { userName });
+    io.to(roomId).emit('room-update', room.toJSON());
 
     if (room.allUsersReady() && !room.gameInProgress) {
+      room.setStatus('ready');
+      io.to(roomId).emit('room-update', room.toJSON());
+    }
+  });
+
+  socket.on('start-game', ({ roomId }) => {
+    const room = roomManager.getRoom(roomId);
+    if (room && !room.gameInProgress) {
       room.startGame(io);
       io.to(roomId).emit('game-start');
-      console.log("game started", room.gameInProgress);
+      io.to(roomId).emit('room-update', room.toJSON());
     }
-
-    
   });
 
   socket.on('guess', ({ roomId, userName, guess }) => {
@@ -226,7 +350,13 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ... (other socket event handlers)
+  socket.on('draw-line', ({ prevPoint, currentPoint, color, roomId }) => {
+    const room = roomManager.getRoom(roomId);
+    if (room) {
+      // Broadcast the drawing data to all other users in the room
+      socket.to(roomId).emit('draw-line', { prevPoint, currentPoint, color });
+    }
+  });
 });
 
 app.get('/create-room', (req, res) => {

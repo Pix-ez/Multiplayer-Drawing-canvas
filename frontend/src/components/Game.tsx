@@ -3,12 +3,13 @@
 import { FC, useContext, useEffect, useState } from 'react'
 import { useDraw } from '../hooks/useDraw'
 import { ChromePicker } from 'react-color'
-import { io } from 'socket.io-client'
+import socket from '../hooks/socketService';
+import { useGameContext } from '../Context';
 import { drawLine } from '../utils/drawLine'
 import axios from 'axios'
 
 
-const socket = io('http://localhost:3001')
+
 type DrawLineProps = {
     prevPoint: Point | null
     currentPoint: Point
@@ -24,50 +25,50 @@ type DrawLineProps = {
   
   const Game: FC<pageProps> = ({ }) => {
     const [color, setColor] = useState<string>('#000');
-    const { canvasRef, onMouseDown, clear } = useDraw(createLine);
-    const roomId = sessionStorage.getItem('roomid');
-    const userName = sessionStorage.getItem('name');
-    const [isReady, setIsReady] = useState(false);
-    const [room, setRoom] = useState<Room | undefined>();
-    const [gameStarted, setGameStarted] = useState(false);
-    const [roundTimeRemaining, setRoundTimeRemaining] = useState(30);
-    const [gameTimeRemaining, setGameTimeRemaining] = useState(60);
-    const [currentDrawer, setCurrentDrawer] = useState('');
-    const [currentWord, setCurrentWord] = useState('');
+    const { canvasRef, onMouseDown, clear} = useDraw(createLine);
+    // const roomId = sessionStorage.getItem('roomid');
+    // const userName = sessionStorage.getItem('name');
+    const {
+      roomId, setRoomId,
+      userName, setUserName,
+      users, setUsers,
+      ready, setReady,
+      gameStarted, setGameStarted,
+      currentDrawer,setCurrentDrawer,
+      currentWord,setCurrentWord,
+      scores,setScores,
+      roundTimeRemaining, setRoundTimeRemaining,
+      gameTimeRemaining ,setGameTimeRemaining
+    } = useGameContext();
+    // const [isReady, setIsReady] = useState(false);
+    // const [room, setRoom] = useState<Room | undefined>();
+    // const [gameStarted, setGameStarted] = useState(false);
+    // const [roundTimeRemaining, setRoundTimeRemaining] = useState(30);
+    // const [gameTimeRemaining, setGameTimeRemaining] = useState(60);
+    // const [currentDrawer, setCurrentDrawer] = useState('');
+    // const [currentWord, setCurrentWord] = useState('');
     const [isDrawing, setIsDrawing] = useState(false);
     const [guess, setGuess] = useState('');
   
     useEffect(() => {
-      if (!sessionStorage.getItem('hasJoinedRoom')) {
-        socket.emit('join-room', { roomId, userName });
-        sessionStorage.setItem('hasJoinedRoom', 'true');
-      }
+      
+      // if (!sessionStorage.getItem('hasJoinedRoom')) {
+      //   socket.emit('join-room', { roomId, userName });
+      //   sessionStorage.setItem('hasJoinedRoom', 'true');
+      // }
   
-      socket.on('room-joined', (data) => {
-        console.log(data.message);
-        alert(data.message);
-      });
   
-      socket.on('room', (data) => {
-        console.log(data);
-        setRoom(data);
-      });
-  
-      socket.on('game-start', () => {
-        setGameStarted(true);
-      });
-  
-      socket.on('user-ready', ({ userName }) => {
-        setRoom((prevRoom) => {
-          if (prevRoom) {
-            return {
-              ...prevRoom,
-              ready: { ...prevRoom.ready, [userName]: true },
-            };
-          }
-          return prevRoom;
-        });
-      });
+      // socket.on('user-ready', ({ userName }) => {
+      //   setRoom((prevRoom) => {
+      //     if (prevRoom) {
+      //       return {
+      //         ...prevRoom,
+      //         ready: { ...prevRoom.ready, [userName]: true },
+      //       };
+      //     }
+      //     return prevRoom;
+      //   });
+      // });
   
       socket.on('round-start', ({ drawer, word, roundTime }) => {
         setCurrentDrawer(drawer);
@@ -80,8 +81,9 @@ type DrawLineProps = {
       socket.on('game-time', (time) => {
         setGameTimeRemaining(time);
       });
-  
+      
       socket.on('round-time', (time) => {
+        // console.log(time);
         setRoundTimeRemaining(time);
       });
   
@@ -99,6 +101,7 @@ type DrawLineProps = {
       });
   
       socket.on('draw-line', ({ prevPoint, currentPoint, color }: DrawLineProps) => {
+        
         const ctx = canvasRef.current?.getContext('2d');
         if (!ctx) return console.log('no ctx here');
         drawLine({ prevPoint, currentPoint, ctx, color });
@@ -122,11 +125,11 @@ type DrawLineProps = {
       };
     }, []);
   
-    function createLine({ prevPoint, currentPoint, ctx }: Draw) {
-      if (isDrawing) {
-        socket.emit('draw-line', { prevPoint, currentPoint, color });
-        drawLine({ prevPoint, currentPoint, ctx, color });
-      }
+    function createLine({ prevPoint, currentPoint, ctx, roomId }: Draw & { roomId: string }) {
+      console.log(roomId)
+      // console.log("draw-line called", prevPoint, currentPoint, color);
+      socket.emit('draw-line', { prevPoint, currentPoint, color, roomId });
+      drawLine({ prevPoint, currentPoint, ctx, color });
     }
   
     const handleReadyClick = () => {
@@ -171,10 +174,10 @@ type DrawLineProps = {
       <>
         <div className='flex flex-row w-screen h-screen gap-10'>
           <div className='flex flex-col items-start bg-blue-600 w-1/5 h-2/5 self-center ml-4'>
-            {room?.users.map((user) => (
+            {users?.map((user) => (
               <div key={user}>
                 <span className='text-black text-lg font-extrabold'>{user}</span>
-                <span className='text-black text-lg font-extrabold'>{room?.scores[user]}</span>
+                <span className='text-black text-lg font-extrabold'>{scores[user]}</span>
               </div>
             ))}
           </div>
@@ -211,7 +214,7 @@ type DrawLineProps = {
             )}
           </div>
   
-          {isDrawing && (
+          
             <div className='flex flex-col gap-10 pr-10 mt-10'>
               <ChromePicker color={color} onChange={(e) => setColor(e.hex)} />
               <button
@@ -222,7 +225,7 @@ type DrawLineProps = {
                 Clear canvas
               </button>
             </div>
-          )}
+          
         </div>
       </>
     );

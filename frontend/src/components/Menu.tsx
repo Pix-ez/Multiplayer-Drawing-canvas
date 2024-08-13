@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { io } from 'socket.io-client';
+
 import { useGameContext } from '../Context';
-const socket = io('http://localhost:3001');
+import socket from '../hooks/socketService';
 
 const Menu = () => {
   const navigate = useNavigate();
@@ -22,18 +22,25 @@ const Menu = () => {
     setGameTimeRemaining
   } = useGameContext();
 
-  const [error, setError] = React.useState('');
-  const [joined, setJoined] = React.useState(false);
+  const [error, setError] = useState('');
+  const [joined, setJoined] = useState(false);
+  const [isHost, setIsHost] = useState(false);
+  const [roomCapacity, setRoomCapacity] = useState(0);
+  const [roomStatus, setRoomStatus] = useState('');
 
   useEffect(() => {
     socket.on('room-joined', (data) => {
       console.log(data.message);
       setJoined(true);
+      setIsHost(data.isHost);
+      setRoomCapacity(data.capacity);
+      setRoomStatus(data.status);
     });
 
     socket.on('room', (data) => {
       console.log('Room data:', data);
       setUsers(data.users);
+      setRoomStatus(data.status);
     });
 
     socket.on('game-start', () => {
@@ -43,11 +50,17 @@ const Menu = () => {
 
     socket.on('room-error', setError);
 
+    socket.on('room-update', (data) => {
+      setRoomStatus(data.status);
+      setUsers(data.users);
+    });
+
     return () => {
       socket.off('room-joined');
       socket.off('room');
       socket.off('game-start');
       socket.off('room-error');
+      socket.off('room-update');
     };
   }, [navigate, setUsers, setGameStarted]);
 
@@ -56,7 +69,7 @@ const Menu = () => {
       setError('Please enter a name');
       return;
     }
-
+    console.log('Joining room:', roomId);
     setRoomId(roomId);
     socket.emit('join-room', { roomId, userName });
   };
@@ -74,6 +87,7 @@ const Menu = () => {
   
       if (res.status === 200) {
         const newRoomId = res.data.room;
+        console.log('Created room:', newRoomId);
         setRoomId(newRoomId);
         joinRoom(newRoomId);
       }
@@ -98,25 +112,37 @@ const Menu = () => {
     socket.emit('ready', { roomId, userName });
     setReady(true);
   };
+  
+  const handleStartGame = () => {
+    if (isHost) {
+      socket.emit('start-game', { roomId });
+    }
+  };
 
   if (joined) {
     return (
       <div>
         <h2>Room: {roomId}</h2>
-        <h3>Users in room:</h3>
+        <h3>Users in room: {users.length}/{roomCapacity}</h3>
         <ul>
           {users.map((user, index) => (
-            <li key={index}>{user}{user === userName && ' (You)'}</li>
+            <li key={index}>{user}{user === userName && ' (You)'}{user === users[0] && ' (Host)'}</li>
           ))}
         </ul>
+        <p>Room Status: {roomStatus}</p>
         <button onClick={handleReady} disabled={ready}>
           {ready ? 'Waiting for others...' : 'Ready'}
         </button>
+        {isHost && (
+          <button onClick={handleStartGame} disabled={users.length < 2 || roomStatus !== 'ready'}>
+            Start Game
+          </button>
+        )}
       </div>
     );
   }
 
-  return (
+ return (
     <div>
       {error && <p style={{color: 'red'}}>{error}</p>}
       <div>
