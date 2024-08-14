@@ -8,134 +8,134 @@
 // import { v4 as uuidv4 } from 'uuid';
 // import { words } from './words.json';
 
-class Room {
-  id: string;
-  users: string[];
-  ready: Record<string, boolean>;
-  scores: Record<string, number>;
-  currentPlayerIndex: number;
-  currentWord: string | null;
-  gameInProgress: boolean;
-  roundTimeRemaining: number;
-  gameTimeRemaining: number;
-  roundTimer: NodeJS.Timeout | null;
-  gameTimer: NodeJS.Timeout | null;
+// class Room {
+//   id: string;
+//   users: string[];
+//   ready: Record<string, boolean>;
+//   scores: Record<string, number>;
+//   currentPlayerIndex: number;
+//   currentWord: string | null;
+//   gameInProgress: boolean;
+//   roundTimeRemaining: number;
+//   gameTimeRemaining: number;
+//   roundTimer: NodeJS.Timeout | null;
+//   gameTimer: NodeJS.Timeout | null;
 
-  constructor(id: string) {
-    this.id = id;
-    this.users = [];
-    this.ready = {};
-    this.scores = {};
-    this.currentPlayerIndex = -1;
-    this.currentWord = null;
-    this.gameInProgress = false;
-    this.roundTimeRemaining = 30;
-    this.gameTimeRemaining = 60;
-    this.roundTimer = null;
-    this.gameTimer = null;
-  }
+//   constructor(id: string) {
+//     this.id = id;
+//     this.users = [];
+//     this.ready = {};
+//     this.scores = {};
+//     this.currentPlayerIndex = -1;
+//     this.currentWord = null;
+//     this.gameInProgress = false;
+//     this.roundTimeRemaining = 30;
+//     this.gameTimeRemaining = 60;
+//     this.roundTimer = null;
+//     this.gameTimer = null;
+//   }
 
-  addUser(userName: string) {
-    this.users.push(userName);
-    this.ready[userName] = false;
-    this.scores[userName] = 0;
-  }
+//   addUser(userName: string) {
+//     this.users.push(userName);
+//     this.ready[userName] = false;
+//     this.scores[userName] = 0;
+//   }
 
-  setUserReady(userName: string) {
-    this.ready[userName] = true;
-  }
+//   setUserReady(userName: string) {
+//     this.ready[userName] = true;
+//   }
 
-  allUsersReady(): boolean {
-    return this.users.every(user => this.ready[user]);
-  }
+//   allUsersReady(): boolean {
+//     return this.users.every(user => this.ready[user]);
+//   }
 
-  selectNextPlayer(): string {
-    this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.users.length;
-    return this.users[this.currentPlayerIndex];
-  }
+//   selectNextPlayer(): string {
+//     this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.users.length;
+//     return this.users[this.currentPlayerIndex];
+//   }
 
-  setCurrentWord(word: string) {
-    this.currentWord = word;
-  }
+//   setCurrentWord(word: string) {
+//     this.currentWord = word;
+//   }
 
-  updateScore(userName: string, points: number) {
-    this.scores[userName] += points;
-  }
+//   updateScore(userName: string, points: number) {
+//     this.scores[userName] += points;
+//   }
 
-  startGame(io: SocketIOServer) {
+//   startGame(io: SocketIOServer) {
     
-    this.gameInProgress = true;
-    this.gameTimeRemaining = 60;
-    this.startRound(io);
+//     this.gameInProgress = true;
+//     this.gameTimeRemaining = 60;
+//     this.startRound(io);
 
-    this.gameTimer = setInterval(() => {
-      this.gameTimeRemaining--;
-      io.to(this.id).emit('game-time', this.gameTimeRemaining);
+//     this.gameTimer = setInterval(() => {
+//       this.gameTimeRemaining--;
+//       io.to(this.id).emit('game-time', this.gameTimeRemaining);
 
-      if (this.gameTimeRemaining <= 0) {
-        this.endGame(io);
-      }
-    }, 1000);
-  }
+//       if (this.gameTimeRemaining <= 0) {
+//         this.endGame(io);
+//       }
+//     }, 1000);
+//   }
 
-  startRound(io: SocketIOServer) {
-    this.roundTimeRemaining = 30;
-    const currentPlayer = this.selectNextPlayer();
-    const word = getRandomWord();
-    this.setCurrentWord(word);
+//   startRound(io: SocketIOServer) {
+//     this.roundTimeRemaining = 30;
+//     const currentPlayer = this.selectNextPlayer();
+//     const word = getRandomWord();
+//     this.setCurrentWord(word);
 
-    io.to(this.id).emit('round-start', {
-      drawer: currentPlayer,
-      word: this.currentWord,
-      roundTime: this.roundTimeRemaining
-    });
+//     io.to(this.id).emit('round-start', {
+//       drawer: currentPlayer,
+//       word: this.currentWord,
+//       roundTime: this.roundTimeRemaining
+//     });
 
-    this.roundTimer = setInterval(() => {
-      this.roundTimeRemaining--;
-      // console.log(this.roundTimeRemaining);
-      io.to(this.id).emit('round-time', this.roundTimeRemaining);
+//     this.roundTimer = setInterval(() => {
+//       this.roundTimeRemaining--;
+//       // console.log(this.roundTimeRemaining);
+//       io.to(this.id).emit('round-time', this.roundTimeRemaining);
 
-      if (this.roundTimeRemaining <= 0) {
-        this.endRound(io);
-      }
-    }, 1000);
-  }
+//       if (this.roundTimeRemaining <= 0) {
+//         this.endRound(io);
+//       }
+//     }, 1000);
+//   }
 
-  endRound(io: SocketIOServer) {
-    if (this.roundTimer) {
-      clearInterval(this.roundTimer);
-    }
-    io.to(this.id).emit('round-end', { word: this.currentWord });
+//   endRound(io: SocketIOServer) {
+//     if (this.roundTimer) {
+//       clearInterval(this.roundTimer);
+//     }
+//     io.to(this.id).emit('round-end', { word: this.currentWord });
     
-    if (this.gameInProgress) {
-      this.startRound(io);
-    }
-  }
+//     if (this.gameInProgress) {
+//       this.startRound(io);
+//     }
+//   }
 
-  endGame(io: SocketIOServer) {
-    this.gameInProgress = false;
-    if (this.gameTimer) {
-      clearInterval(this.gameTimer);
-    }
-    if (this.roundTimer) {
-      clearInterval(this.roundTimer);
-    }
-    io.to(this.id).emit('game-end', { finalScores: this.scores });
-  }
+//   endGame(io: SocketIOServer) {
+//     this.gameInProgress = false;
+//     if (this.gameTimer) {
+//       clearInterval(this.gameTimer);
+//     }
+//     if (this.roundTimer) {
+//       clearInterval(this.roundTimer);
+//     }
+//     io.to(this.id).emit('game-end', { finalScores: this.scores });
+//   }
 
-  toJSON() {
-    return {
-      id: this.id,
-      users: this.users,
-      ready: this.ready,
-      scores: this.scores,
-      currentPlayerIndex: this.currentPlayerIndex,
-      gameInProgress: this.gameInProgress,
-      roundTimeRemaining: this.roundTimeRemaining,
-      gameTimeRemaining: this.gameTimeRemaining,
-    };
-  }
-}
+//   toJSON() {
+//     return {
+//       id: this.id,
+//       users: this.users,
+//       ready: this.ready,
+//       scores: this.scores,
+//       currentPlayerIndex: this.currentPlayerIndex,
+//       gameInProgress: this.gameInProgress,
+//       roundTimeRemaining: this.roundTimeRemaining,
+//       gameTimeRemaining: this.gameTimeRemaining,
+//     };
+//   }
+// }
 
 
 // class RoomManager {
@@ -328,6 +328,8 @@ io.on('connection', (socket) => {
 
     if (room.allUsersReady() && !room.gameInProgress) {
       room.setStatus('ready');
+      room.startGame(io);
+      io.to(roomId).emit('game-start');
       io.to(roomId).emit('room-update', room.toJSON());
     }
   });
@@ -351,6 +353,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('draw-line', ({ prevPoint, currentPoint, color, roomId }) => {
+    // console.log('draw-line called', prevPoint, currentPoint, color ,roomId);
     const room = roomManager.getRoom(roomId);
     if (room) {
       // Broadcast the drawing data to all other users in the room

@@ -1,10 +1,17 @@
+//@ts-nocheck
+
 import { useEffect, useRef, useState } from 'react'
+import { useGameContext } from '../Context'
 
 export const useDraw = (onDraw: ({ ctx, currentPoint, prevPoint }: Draw) => void) => {
   const [mouseDown, setMouseDown] = useState(false)
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const prevPoint = useRef<null | Point>(null)
+  const {
+    roomId, setRoomId,
+   
+  } = useGameContext();
 
   const onMouseDown = () => setMouseDown(true)
 
@@ -19,6 +26,7 @@ export const useDraw = (onDraw: ({ ctx, currentPoint, prevPoint }: Draw) => void
   }
 
   useEffect(() => {
+    console.log(roomId)
     const handler = (e: MouseEvent) => {
       if (!mouseDown) return
       const currentPoint = computePointInCanvas(e)
@@ -26,7 +34,7 @@ export const useDraw = (onDraw: ({ ctx, currentPoint, prevPoint }: Draw) => void
       const ctx = canvasRef.current?.getContext('2d')
       if (!ctx || !currentPoint) return
 
-      onDraw({ ctx, currentPoint, prevPoint: prevPoint.current })
+      onDraw({ ctx, currentPoint, prevPoint: prevPoint.current, roomId }); // Pass roomId here
       prevPoint.current = currentPoint
     }
 
@@ -55,7 +63,7 @@ export const useDraw = (onDraw: ({ ctx, currentPoint, prevPoint }: Draw) => void
       canvasRef.current?.removeEventListener('mousemove', handler)
       window.removeEventListener('mouseup', mouseUpHandler)
     }
-  }, [onDraw])
+  }, [onDraw, roomId])
 
   return { canvasRef, onMouseDown, clear }
 }

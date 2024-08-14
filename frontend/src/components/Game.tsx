@@ -52,6 +52,7 @@ type DrawLineProps = {
   
     useEffect(() => {
       
+      
       // if (!sessionStorage.getItem('hasJoinedRoom')) {
       //   socket.emit('join-room', { roomId, userName });
       //   sessionStorage.setItem('hasJoinedRoom', 'true');
@@ -125,12 +126,13 @@ type DrawLineProps = {
       };
     }, []);
   
-    function createLine({ prevPoint, currentPoint, ctx, roomId }: Draw & { roomId: string }) {
-      console.log(roomId)
-      // console.log("draw-line called", prevPoint, currentPoint, color);
+    function createLine({ prevPoint, currentPoint, ctx, roomId }: Draw) {
+      console.log("draw-line called", prevPoint, currentPoint, roomId);  // Log the roomId to verify
+      
       socket.emit('draw-line', { prevPoint, currentPoint, color, roomId });
       drawLine({ prevPoint, currentPoint, ctx, color });
     }
+    
   
     const handleReadyClick = () => {
       setIsReady(true);
