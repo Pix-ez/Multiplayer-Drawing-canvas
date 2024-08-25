@@ -7,6 +7,7 @@ import socket from '../hooks/socketService';
 import { useGameContext } from '../Context';
 import { drawLine } from '../utils/drawLine'
 import axios from 'axios'
+import ChatBox from './ChatBox';
 
 
 
@@ -49,6 +50,8 @@ type DrawLineProps = {
     // const [currentWord, setCurrentWord] = useState('');
     const [isDrawing, setIsDrawing] = useState(false);
     const [guess, setGuess] = useState('');
+    const [guesses, setGuesses] = useState([]);
+
   
     useEffect(() => {
       
@@ -109,6 +112,19 @@ type DrawLineProps = {
       });
   
       socket.on('clear', clear);
+
+      socket.on('receive-guess', ({ userName, guess, isCorrect }) => {
+        console.log('receive-guess called', userName, guess, isCorrect);
+        setGuesses(prevGuesses => [
+            ...prevGuesses,
+            {
+                name: userName,
+                guessWord: guess,
+                isCorrect: isCorrect
+            }
+        ]);
+    });
+    
   
       return () => {
         socket.off('room-joined');
@@ -123,6 +139,8 @@ type DrawLineProps = {
         socket.off('game-end');
         socket.off('draw-line');
         socket.off('clear');
+        socket.off('receive-guess');
+
       };
     }, []);
   
@@ -134,18 +152,17 @@ type DrawLineProps = {
     }
     
   
-    const handleReadyClick = () => {
-      setIsReady(true);
-      socket.emit('ready', { roomId, userName });
-    };
+    // const handleReadyClick = () => {
+    //   setIsReady(true);
+    //   socket.emit('ready', { roomId, userName });
+    // };
   
-    const handleGuessSubmit = (e: React.FormEvent) => {
-      e.preventDefault();
-      if (guess.trim() !== '') {
-        socket.emit('guess', { roomId, userName, guess: guess.trim() });
-        setGuess('');
-      }
-    };
+    // const handleGuessSubmit = (e: React.FormEvent) => {
+     
+    // socket.emit('submit-guess', { roomId, userName, guess: guess.trim() });
+      
+    
+    // };
   
     // if (!gameStarted) {
     //   return (
@@ -182,6 +199,8 @@ type DrawLineProps = {
                 <span className='text-black text-lg font-extrabold'>{scores[user]}</span>
               </div>
             ))}
+
+          <ChatBox  guesses={guesses}/>
           </div>
   
           <div className='flex flex-col items-center'>
@@ -202,7 +221,7 @@ type DrawLineProps = {
               />
             </div>
   
-            {!isDrawing && (
+            {/* {!isDrawing && (
               <form onSubmit={handleGuessSubmit}>
                 <input
                   type="text"
@@ -213,7 +232,7 @@ type DrawLineProps = {
                 />
                 <button type="submit" className='bg-blue-500 text-white p-2 rounded'>Guess</button>
               </form>
-            )}
+            )} */}
           </div>
   
           

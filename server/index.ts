@@ -343,13 +343,25 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('guess', ({ roomId, userName, guess }) => {
+  socket.on('submit-guess', ({ roomId, userName, guess }) => {
+    // console.log('submit-guess called', roomId, userName, guess);
     const room = roomManager.getRoom(roomId);
+
+    // if (room && room.gameInProgress && guess === room.currentWord) {
+    //   room.updateScore(userName, 10); // Award points for correct guess
+    //   io.to(roomId).emit('correct-guess', { userName, word: room.currentWord });
+    //   room.endRound(io);
+    // }
     if (room && room.gameInProgress && guess === room.currentWord) {
-      room.updateScore(userName, 10); // Award points for correct guess
-      io.to(roomId).emit('correct-guess', { userName, word: room.currentWord });
-      room.endRound(io);
+      // room.updateScore(userName, 10); // Award points for correct guess
+      let isCorrect = true;
+      io.to(roomId).emit('receive-guess', { userName, guess, isCorrect });
+    }else{
+      let isCorrect = false;
+      io.to(roomId).emit('receive-guess', { userName, guess, isCorrect });
+      console.log('send', userName, guess, isCorrect);
     }
+    
   });
 
   socket.on('draw-line', ({ prevPoint, currentPoint, color, roomId }) => {
@@ -360,6 +372,10 @@ io.on('connection', (socket) => {
       socket.to(roomId).emit('draw-line', { prevPoint, currentPoint, color });
     }
   });
+
+
+
+
 });
 
 app.get('/create-room', (req, res) => {
